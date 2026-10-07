@@ -1,0 +1,49 @@
+cat > .gitignore << 'EOF'
+# Entorno
+.env
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Datos (no subir datos crudos ni procesados)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Modelos y artefactos
+models/
+*.pkl
+*.joblib
+*.onnx
+*.h5
+*.pt
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Calidad de código
+.ruff_cache/
+.mypy_cache/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+EOF
