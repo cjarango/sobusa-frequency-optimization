@@ -48,7 +48,7 @@ project:
     - file: README.md
       title: "Introducción"
     - file: notebooks/01_exploratory_data_analysis_K54.ipynb
-      title: "EDA — Ruta K54"
+    - file: notebooks/02_exploratory_data_analysis_Silencio.ipynb
     - file: notebooks/03_exploratory_data_analysis_CL72.ipynb
     - file: notebooks/04_feature_engineering.ipynb
 

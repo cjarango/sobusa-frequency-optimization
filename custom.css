@@ -271,22 +271,40 @@ article > div > h2:first-of-type {
    the label would be injected a second time outside the card (section 6
    already handles the footer cards on its own).
 
-   To extend: inspect the anchor in the browser, read its href, and add a
-   new (label, href-substring) pair following the pattern below.
+   To extend: inspect the anchor in the browser, read its href, add its
+   selector to BOTH shared lists below, and add one `content` rule at the end
+   of this block. (Remember to add it to section 6.2 too, for the footer card.)
    --------------------------------------------------------------------------- */
 
-/* CL72 — long H1, short sidebar label (sidebar only, not footer) */
-a[href*="exploratory-data-analysis-cl72"]:not(.myst-footer-link) {
+/* (1) Mute the long title — sidebar only, not footer */
+a[href*="exploratory-data-analysis-cl72"]:not(.myst-footer-link),
+a[href*="exploratory-data-analysis-k54"]:not(.myst-footer-link),
+a[href*="exploratory-data-analysis-silencio"]:not(.myst-footer-link) {
   font-size: 0 !important;
 }
 
-a[href*="exploratory-data-analysis-cl72"]:not(.myst-footer-link)::after {
-  content: "EDA — Ruta Calle 72";
+/* (2) Shared look of the injected sidebar label */
+a[href*="exploratory-data-analysis-cl72"]:not(.myst-footer-link)::after,
+a[href*="exploratory-data-analysis-k54"]:not(.myst-footer-link)::after,
+a[href*="exploratory-data-analysis-silencio"]:not(.myst-footer-link)::after {
   font-size: 1rem !important;
   font-family: inherit !important;
   font-weight: 400;
   color: inherit;
   visibility: visible;
+}
+
+/* (3) Label text per page */
+a[href*="exploratory-data-analysis-cl72"]:not(.myst-footer-link)::after {
+  content: "EDA — Ruta Calle 72";
+}
+
+a[href*="exploratory-data-analysis-k54"]:not(.myst-footer-link)::after {
+  content: "EDA — Ruta K54";
+}
+
+a[href*="exploratory-data-analysis-silencio"]:not(.myst-footer-link)::after {
+  content: "EDA — Ruta El Silencio";
 }
 
 
@@ -364,7 +382,9 @@ a.myst-footer-link.myst-footer-link-prev:not(:only-child) .flex-grow {
 a.myst-footer-link[href="/"] .flex-grow,
 a.myst-footer-link[href$="/sobusa-frequency-optimization/"] .flex-grow,
 a.myst-footer-link[href$="/sobusa-frequency-optimization"] .flex-grow,
-a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow {
+a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow,
+a.myst-footer-link[href*="exploratory-data-analysis-k54"] .flex-grow,
+a.myst-footer-link[href*="exploratory-data-analysis-silencio"] .flex-grow {
   font-size: 0 !important;
   color: transparent !important;
 }
@@ -373,7 +393,9 @@ a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow {
 a.myst-footer-link[href="/"] .flex-grow::after,
 a.myst-footer-link[href$="/sobusa-frequency-optimization/"] .flex-grow::after,
 a.myst-footer-link[href$="/sobusa-frequency-optimization"] .flex-grow::after,
-a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow::after {
+a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow::after,
+a.myst-footer-link[href*="exploratory-data-analysis-k54"] .flex-grow::after,
+a.myst-footer-link[href*="exploratory-data-analysis-silencio"] .flex-grow::after {
   display: block !important;
   visibility: visible !important;
   font-family: inherit !important;
@@ -391,6 +413,14 @@ a.myst-footer-link[href$="/sobusa-frequency-optimization"] .flex-grow::after {
 
 a.myst-footer-link[href*="exploratory-data-analysis-cl72"] .flex-grow::after {
   content: "EDA — Ruta Calle 72";
+}
+
+a.myst-footer-link[href*="exploratory-data-analysis-k54"] .flex-grow::after {
+  content: "EDA — Ruta K54";
+}
+
+a.myst-footer-link[href*="exploratory-data-analysis-silencio"] .flex-grow::after {
+  content: "EDA — Ruta El Silencio";
 }
 
 /* ---------------------------------------------------------------------------
