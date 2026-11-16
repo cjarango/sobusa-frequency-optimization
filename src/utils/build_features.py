@@ -8,12 +8,12 @@ Builds calendar, cyclical, seasonality and lag features on a split
 (train or holdout) produced by ``eda_toolkit.split_and_save(df_agre)``.
 
 The output is the model-ready dataset: the ``franja_ts`` DatetimeIndex
-(full date + time) is preserved, and the DataFrame carries 24 columns
+(full date + time) is preserved, and the DataFrame carries 25 columns
 in a fixed order.
 
     1.      ``franja``               (HH:MM:SS tag from the consolidated)
-    2-23.   the 22 feature columns   (calendar, cyclical, seasonality, lags)
-    24.     ``pasajeros``            (response)
+    2-24.   the 23 feature columns   (calendar, cyclical, seasonality, lags)
+    25.     ``pasajeros``            (response)
 
 All other metadata and intermediate columns from the consolidation
 (``anio``, ``mes``, ``dia``, ``minuto``, ``tipo_estacionalidad``,
@@ -41,47 +41,18 @@ Design Decisions
 - Seasonality is one-hot encoded against the five canonical categories,
   so the feature columns exist even when a split does not contain all
   of them.
-- Excluded on purpose: ``anio`` (risk of extrapolation with tree
-  models), ``n_viajes`` (optimizer decision variable), ``duracion_min``
-  (unknown at dispatch time), ``nombre_evento``.
-
-Expected Input
---------------
-A split produced by ``split_and_save`` with a ``DatetimeIndex``
-(``franja_ts``) and at least the columns::
-
-    franja, mes, dia_semana, tipo_estacionalidad, pasajeros
-
-Any other column from the consolidated table is treated as metadata
-and discarded.
-
-Main Functionalities
---------------------
-Pipeline
-    build_features
-Calendar
-    add_calendar_features
-Cyclical
-    add_cyclical_features
-Seasonality
-    add_seasonality_features
-Lags
-    add_lag_features
-Column Lists
-    feature_columns
-
-Dependencies
-------------
-numpy, pandas
+- ``t_index`` is a continuous time feature (year + day-of-year / 365.25)
+  that lets tree models capture the demand drift between years.
+- Excluded on purpose: ``anio`` (categorical spacing and sharp jumps),
+  ``n_viajes`` (optimizer decision variable), ``duracion_min`` (unknown
+  at dispatch time), ``nombre_evento``.
 """
 from __future__ import annotations
 
-# Third-party ----
 import numpy as np
 import pandas as pd
 
-# Metadata ----
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 __author__ = (
     "Juan Camilo Mendoza Arango <cjarango@uninorte.edu.co>, "
@@ -89,7 +60,6 @@ __author__ = (
     "Miguel Ángel Pérez Vargas <vargasmiguel@uninorte.edu.co>"
 )
 
-# Public API declaration ----
 __all__ = [
     "LAGS",
     "LAG_PREFIX",
@@ -105,7 +75,6 @@ __all__ = [
     "feature_columns",
 ]
 
-# Module-level constants ----
 LAGS = (32, 33, 65, 455)
 LAG_PREFIX = "lag"
 SEASON_COL = "tipo_estacionalidad"
@@ -122,24 +91,22 @@ SEASON_CATEGORIES = (
 )
 
 
-# Public API ====
-
-# Calendar ----
-
 def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Derive ``hora``, ``minuto`` and ``es_fin_de_semana`` from the index.
+    """Derive ``hora``, ``minuto``, ``es_fin_de_semana`` and ``t_index``
+    from the index.
 
-    Assumes ``dia_semana`` follows the ISO convention: 1 = Monday,
-    7 = Sunday. Weekend rows are therefore those with ``dia_semana``
-    in ``{6, 7}``.
+    ``t_index`` is a continuous time coordinate computed as
+    ``year + dayofyear / 365.25``. It is absolute, so train and holdout
+    share the same scale and tree models can learn the demand drift
+    between years.
 
     Args:
         df (pandas.DataFrame): Split with a ``DatetimeIndex`` named
             ``franja_ts`` and a ``dia_semana`` column.
 
     Returns:
-        pandas.DataFrame: Copy of ``df`` with the three calendar
-        columns added as ``int8``.
+        pandas.DataFrame: Copy of ``df`` with the four calendar
+        columns added.
 
     Raises:
         TypeError: If ``df`` is not a DataFrame or lacks a DatetimeIndex.
@@ -154,10 +121,9 @@ def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
     df["hora"] = ts.hour.astype("int8")
     df["minuto"] = ts.minute.astype("int8")
     df["es_fin_de_semana"] = df["dia_semana"].isin([6, 7]).astype("int8")
+    df["t_index"] = (ts.year + ts.dayofyear / 365.25).astype("float32")
     return df
 
-
-# Cyclical ----
 
 def add_cyclical_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add sin/cos encodings for hour (fundamental + 2nd harmonic),
@@ -196,17 +162,13 @@ def add_cyclical_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# Seasonality ----
-
 def add_seasonality_features(df: pd.DataFrame) -> pd.DataFrame:
     """One-hot encode ``tipo_estacionalidad`` against the five canonical
     categories.
 
     Forcing the categories guarantees that all five ``est_*`` columns
     are present even when a split does not contain every category, so
-    train and holdout share an identical feature schema. The categorical
-    dtype is applied on the Series (not on a bare ``pd.Categorical``) so
-    the DataFrame index is preserved through ``pd.get_dummies``.
+    train and holdout share an identical feature schema.
 
     Args:
         df (pandas.DataFrame): DataFrame with ``tipo_estacionalidad``.
@@ -229,8 +191,6 @@ def add_seasonality_features(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df, dummies], axis=1)
 
 
-# Lags ----
-
 def add_lag_features(
     df: pd.DataFrame,
     lags: tuple[int, ...] = LAGS,
@@ -248,10 +208,9 @@ def add_lag_features(
         df (pandas.DataFrame): DataFrame with the source column.
         lags (tuple of int): Lag offsets, in slots of 15 min. Defaults
             to ``LAGS``.
-        source_col (str): Column to lag. Defaults to ``TARGET``
-            (``"pasajeros"``).
+        source_col (str): Column to lag. Defaults to ``TARGET``.
         prefix (str): Prefix of the lag columns. Defaults to
-            ``LAG_PREFIX`` (``"lag"``).
+            ``LAG_PREFIX``.
 
     Returns:
         pandas.DataFrame: Copy of ``df`` with one ``{prefix}_{k}``
@@ -287,8 +246,6 @@ def add_lag_features(
     return df
 
 
-# Pipeline ----
-
 def build_features(
     df: pd.DataFrame,
     dropna: bool = False,
@@ -298,17 +255,12 @@ def build_features(
     """Apply the full feature pipeline and return the model-ready dataset.
 
     The DatetimeIndex (``franja_ts``) is preserved. The output carries
-    exactly 24 columns in this order:
+    exactly 25 columns in this order:
 
     1.      ``franja`` (HH:MM:SS tag from the consolidated)
-    2-23.   the 22 feature columns (calendar, cyclical, seasonality,
+    2-24.   the 23 feature columns (calendar, cyclical, seasonality,
             lags)
-    24.     ``source_col`` (the response)
-
-    All other metadata and intermediate columns from the consolidation
-    (``anio``, ``mes``, ``dia``, ``minuto``, ``tipo_estacionalidad``
-    raw, ``nombre_evento``, ``n_viajes``) are dropped. The response
-    column is left untouched.
+    25.     ``source_col`` (the response)
 
     Args:
         df (pandas.DataFrame): Split produced by ``split_and_save``.
@@ -317,16 +269,15 @@ def build_features(
             and ``source_col``.
         dropna (bool): If ``True``, drop every row that contains a NaN
             in any feature. If ``False`` (default), NaNs from the lag
-            warmup are preserved so the caller can inspect or handle
-            them manually.
+            warmup are preserved.
         source_col (str): Column used as response and as the source of
-            the lags. Defaults to ``TARGET`` (``"pasajeros"``).
+            the lags. Defaults to ``TARGET``.
         lag_prefix (str): Prefix of the lag columns. Defaults to
-            ``LAG_PREFIX`` (``"lag"``).
+            ``LAG_PREFIX``.
 
     Returns:
         pandas.DataFrame: Model-ready dataset with the ``franja_ts``
-        DatetimeIndex, ``franja`` as the first column, the 22 features
+        DatetimeIndex, ``franja`` as the first column, the 23 features
         in canonical order, and ``source_col`` as the last column.
 
     Raises:
@@ -358,8 +309,6 @@ def build_features(
         cols = feature_columns(df, lag_prefix=lag_prefix)
         df = df.dropna(subset=cols).copy()
 
-    # Keep only the timestamp tag, the 22 features and the response.
-    # The DatetimeIndex is preserved as-is.
     keep = (
         [TIMESTAMP_COL]
         + feature_columns(df, lag_prefix=lag_prefix)
@@ -368,17 +317,11 @@ def build_features(
     return df[keep].copy()
 
 
-# Column lists ----
-
 def feature_columns(
     df: pd.DataFrame,
     lag_prefix: str = LAG_PREFIX,
 ) -> list[str]:
     """Return the feature columns entering the model.
-
-    The list excludes the timestamp tag, the response column, and any
-    metadata (``anio``, ``mes``, ``dia``, ``minuto``,
-    ``tipo_estacionalidad`` raw, ``nombre_evento``).
 
     Args:
         df (pandas.DataFrame): DataFrame with the feature columns.
@@ -398,7 +341,7 @@ def feature_columns(
     if not isinstance(lag_prefix, str) or not lag_prefix.strip():
         raise TypeError("'lag_prefix' must be a non-empty string.")
 
-    calendar = ["hora", "dia_semana", "es_fin_de_semana"]
+    calendar = ["hora", "dia_semana", "es_fin_de_semana", "t_index"]
     cyclical = [
         "sin_hora", "cos_hora", "sin_hora_2", "cos_hora_2",
         "sin_dow", "cos_dow",
@@ -409,10 +352,6 @@ def feature_columns(
     lags = [f"{lag_prefix}_{k}" for k in LAGS]
     return calendar + cyclical + season + lags
 
-
-# Private helpers ====
-
-# Validation ----
 
 def _require_dataframe(df, name: str = "df") -> None:
     """Raise ``TypeError`` unless ``df`` is a pandas DataFrame."""

@@ -1,0 +1,44 @@
+2026-11-15 18:09:07,541 - INFO - Modelable dataset: 56536 rows, 22 features (h=2 slots, embargo=1).
+2026-11-15 18:09:15,004 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 trials done, 50 remaining.
+2026-11-15 18:12:34,886 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 0.6075 | Params: {'tweedie_variance_power': 1.85, 'num_leaves': 44, 'learning_rate': 0.041397739153077776, 'min_data_in_leaf': 120, 'feature_fraction': 0.7, 'bagging_fraction': 0.75, 'bagging_freq': 8, 'lambda_l2': 1.2140622623716002, 'min_sum_hessian_in_leaf': 0.10124985933456779}
+2026-11-15 18:12:53,643 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_1\LightGBMTweedieWrapper_predictions.csv
+2026-11-15 18:17:30,032 - INFO - Modelable dataset: 56536 rows, 22 features (h=2 slots, embargo=1).
+2026-11-15 18:17:30,428 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 21 trials done, 29 remaining.
+2026-11-15 18:39:41,141 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 18:39:44,008 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 trials done, 30 remaining.
+2026-11-15 18:46:33,409 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 2.0992 | Params: {'num_leaves': 21, 'learning_rate': 0.007552891462863152, 'min_data_in_leaf': 20, 'feature_fraction': 0.5, 'bagging_fraction': 0.9, 'bagging_freq': 8, 'lambda_l2': 1.2285095260548003e-06, 'min_sum_hessian_in_leaf': 8.1602816368913}
+2026-11-15 18:47:20,107 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_2\LightGBMTweedieWrapper_predictions.csv
+2026-11-15 18:56:44,322 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 18:56:44,966 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 trials done, 30 remaining.
+2026-11-15 19:13:06,518 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 2.0193 | Params: {'window': 26000, 'num_leaves': 40, 'learning_rate': 0.004340318545246437, 'min_data_in_leaf': 22, 'feature_fraction': 0.5, 'bagging_fraction': 0.8, 'bagging_freq': 9, 'lambda_l2': 2.936415042220978e-05, 'min_sum_hessian_in_leaf': 0.007241932051415539}
+2026-11-15 19:13:48,326 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_3\LightGBMTweedieWrapper_predictions.csv
+2026-11-15 19:24:15,722 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:24:18,312 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 trials done, 50 remaining.
+2026-11-15 19:32:40,771 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 6.4592 | Params: {'window': 22000, 'num_leaves': 49, 'learning_rate': 0.009535695021603317, 'min_data_in_leaf': 22, 'feature_fraction': 0.6, 'bagging_fraction': 0.8, 'bagging_freq': 2, 'lambda_l2': 0.0005102835913593141, 'min_sum_hessian_in_leaf': 0.0033727601238351342}
+2026-11-15 19:32:54,069 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_4\LightGBMTweedieWrapper_predictions.csv
+2026-11-15 19:41:38,101 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:42:16,829 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:43:18,232 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:43:34,644 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:55:42,763 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 19:55:43,287 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 trials done, 100 remaining.
+2026-11-15 20:40:38,692 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 6.0116 | Params: {'window': 24000, 'num_leaves': 50, 'learning_rate': 0.0029736674447863047, 'min_data_in_leaf': 10, 'feature_fraction': 0.45, 'bagging_fraction': 0.7000000000000001, 'bagging_freq': 2, 'lambda_l1': 5.258459075052899, 'lambda_l2': 1.8618958090490425, 'min_sum_hessian_in_leaf': 0.008749779819321587}
+2026-11-15 20:41:50,122 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_5\LightGBMTweedieWrapper_predictions.csv
+2026-11-15 21:11:28,567 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 21:23:24,139 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 21:28:37,384 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 22:31:17,970 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-15 22:31:20,930 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 completed trials, 100 remaining.
+2026-11-16 00:14:07,654 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 5.9775 | Params: {'window': 24000, 'num_leaves': 63, 'learning_rate': 0.001915947545430018, 'min_data_in_leaf': 11, 'feature_fraction': 0.4, 'bagging_fraction': 0.9500000000000001, 'bagging_freq': 9, 'lambda_l1': 3.4040683712300666e-08, 'lambda_l2': 3.010732420824225e-08, 'min_sum_hessian_in_leaf': 0.4049280114035653}
+2026-11-16 08:08:58,346 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:03:42,167 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:04:55,174 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:28:48,595 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:35:32,681 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:43:00,857 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:53:19,139 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:54:59,502 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:55:20,339 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:56:09,874 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 09:57:38,588 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 10:02:41,527 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
