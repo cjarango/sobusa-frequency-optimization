@@ -42,3 +42,17 @@
 2026-11-16 09:56:09,874 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
 2026-11-16 09:57:38,588 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
 2026-11-16 10:02:41,527 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 10:13:34,397 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 10:14:06,746 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 10:14:54,069 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 10:18:36,751 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 13:13:49,346 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 13:13:58,406 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 completed trials, 100 remaining.
+2026-11-16 13:29:00,903 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 13:29:01,730 - INFO - Study 'LightGBMTweedieWrapper_h2_study': 0 completed trials, 100 remaining.
+2026-11-16 14:04:48,444 - WARNING - [LightGBMTweedieWrapper] Best Tweedie deviance: 3.2053 | Params: {'window': 26000, 'num_leaves': 42, 'learning_rate': 0.009484004689773003, 'min_data_in_leaf': 17, 'feature_fraction': 0.4, 'bagging_fraction': 0.65, 'bagging_freq': 8, 'lambda_l1': 0.00026621217695759153, 'lambda_l2': 2.1604482856110947e-07, 'min_sum_hessian_in_leaf': 0.0020565134495896358}
+2026-11-16 14:05:11,309 - INFO - Saved best-trial predictions to C:\Users\jcami\Documents\sobusa_data_challenge_2026\results\lgbm\exec_8\LightGBMTweedieWrapper_predictions.csv
+2026-11-16 14:29:53,305 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 14:50:25,316 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 14:51:12,274 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-16 14:52:06,952 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
