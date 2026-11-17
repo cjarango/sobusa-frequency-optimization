@@ -51,6 +51,8 @@ project:
     - file: notebooks/02_exploratory_data_analysis_Silencio.ipynb
     - file: notebooks/03_exploratory_data_analysis_CL72.ipynb
     - file: notebooks/04_feature_engineering.ipynb
+    - file: notebooks/06_lightgbm_tweedie_Silencio.ipynb
+
 
 site:
   template: book-theme
