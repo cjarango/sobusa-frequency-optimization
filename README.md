@@ -57,17 +57,38 @@ El problema se formula como un pronóstico supervisado de demanda agregada por r
 
 ### Optimización de frecuencia y flota
 
-A partir de la demanda horaria proyectada $D_{\text{horaria}}$ y los parámetros físicos almacenados por ruta (`capacidad_nominal`, `ciclo_min`, `flota_disponible`, `ocupacion_objetivo`), la recomendación de despacho se formula bajo las restricciones operativas del corredor:
+A partir de la demanda horaria proyectada $D_h$ y los parámetros físicos almacenados por ruta, la recomendación de despacho se formula bajo las restricciones operativas del corredor:
 
-$$\begin{aligned} C_{\text{ef}} &= \text{capacidad\_nominal} \times \text{ocupacion\_objetivo} \\ B_h &= \left\lceil \frac{D_{\text{horaria}}}{C_{\text{ef}}} \right\rceil \\ H &= \frac{60}{B_h} \\ F_{\text{req}} &= \left\lceil \frac{\text{ciclo\_min}}{H} \right\rceil \end{aligned}$$
+$$
+\begin{aligned}
+C_{ef} &= C_{nom} \times \rho \\
+B_h &= \left\lceil \frac{D_h}{C_{ef}} \right\rceil \\
+H &= \frac{60}{B_h} \\
+F_{req} &= \left\lceil \frac{T_{ciclo}}{H} \right\rceil
+\end{aligned}
+$$
+
+Donde cada símbolo corresponde a un campo de la tabla `rutas` o a una variable calculada:
+
+| Símbolo | Significado | Campo / origen |
+|---|---|---|
+| $D_h$ | Demanda horaria proyectada (pasajeros/hora) | Salida del modelo (`y_pred` o `y_upper`) |
+| $C_{nom}$ | Capacidad nominal del vehículo | `capacidad_nominal` |
+| $\rho$ | Ocupación objetivo | `ocupacion_objetivo` |
+| $C_{ef}$ | Capacidad efectiva por vehículo | Calculada |
+| $B_h$ | Buses por hora | Calculada |
+| $H$ | *Headway* (minutos entre despachos) | Calculada |
+| $T_{ciclo}$ | Duración total del ciclo de ruta (min) | `ciclo_min` |
+| $F_{req}$ | Flota requerida | Calculada |
+| $F_{disp}$ | Flota disponible | `flota_disponible` |
 
 Sujeto a:
 
-- capacidad efectiva disponible por vehículo ($C_{\text{ef}}$)
-- flota disponible en patio/corredor ($F_{\text{req}} \le \text{flota\_disponible}$)
+- capacidad efectiva disponible por vehículo ($C_{ef}$)
+- flota disponible en patio/corredor ($F_{req} \le F_{disp}$)
 - límites operativos de *headway* mínimo y máximo
-- duración total de ciclo de ruta (`ciclo_min`)
-- nivel de servicio y ocupación objetivo
+- duración total de ciclo de ruta ($T_{ciclo}$)
+- nivel de servicio y ocupación objetivo ($\rho$)
 
 Valores operativos de referencia:
 
@@ -76,9 +97,9 @@ Valores operativos de referencia:
 | Resolución temporal | 15 minutos |
 | Horizontes operativos | 30, 60 y 120 minutos |
 | Ocupación objetivo | Parametrizada por ruta en PostgreSQL |
-| Diagnóstico `OPTIMO` | $F_{\text{req}} \le \text{flota\_disponible}$ bajo demanda esperada y banda superior |
+| Diagnóstico `OPTIMO` | $F_{req} \le F_{disp}$ bajo demanda esperada y banda superior |
 | Diagnóstico `ALERTA_CAPACIDAD` | Demanda puntual cubierta, banda superior exige flota adicional |
-| Diagnóstico `DEFICIT_FLOTA` | $F_{\text{req}} > \text{flota\_disponible}$ bajo demanda esperada |
+| Diagnóstico `DEFICIT_FLOTA` | $F_{req} > F_{disp}$ bajo demanda esperada |
 
 ---
 
@@ -246,11 +267,11 @@ Reglas de no interferencia:
 
 ## Equipo
 
-| Integrante | Rol |
-|---|---|
-| Natalia Paola Alvarado Corrales | Científica de Datos |
-| Miguel Ángel Pérez Vargas | Científico de Datos |
-| Juan Camilo Mendoza Arango | Científico de Datos |
+| Integrante | Código | Rol |
+|---|---|---|
+| Natalia Paola Alvarado Corrales | 200150416 | Científica de Datos |
+| Miguel Ángel Pérez Vargas | 200150359 | Científico de Datos |
+| Juan Camilo Mendoza Arango | 200135583 | Científico de Datos |
 
 Proyecto desarrollado en el marco del **Data Challenge 2026** — Universidad del Norte & Extreme Technologies.
 
