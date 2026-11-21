@@ -76,3 +76,7 @@
 2026-11-16 20:00:45,592 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
 2026-11-16 20:07:31,423 - INFO - Modelable dataset: 70784 rows, 23 features (h=2 slots, embargo=1).
 2026-11-16 20:09:16,441 - INFO - Modelable dataset: 56536 rows, 23 features (h=2 slots, embargo=1).
+2026-11-18 20:26:11,090 - INFO - Modelable dataset: 56534 rows, 23 features (h=4 slots, embargo=3).
+2026-11-18 20:27:24,041 - INFO - Modelable dataset: 56530 rows, 23 features (h=8 slots, embargo=7).
+2026-11-18 20:32:13,695 - INFO - Modelable dataset: 56534 rows, 23 features (h=4 slots, embargo=3).
+2026-11-18 20:33:31,701 - INFO - Modelable dataset: 56530 rows, 23 features (h=8 slots, embargo=7).

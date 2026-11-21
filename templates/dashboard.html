@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOBUSA · Pronóstico de Demanda y Despacho Óptimo</title>
+  <style>
+    :root {
+      --brand-black: #121212;
+      --charcoal: #1f1f1f;
+      --focus: #2f9e44;
+      --brand-red: #d4202a;
+      --brand-green: #2f9e44;
+      --amber-600: #d97706;
+      --bg: #f4f4f5;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #52525b;
+      --faint: #71717a;
+      --border: #d4d4d8;
+      --border-soft: #e4e4e7;
+      --track: #e4e4e7;
+      --ok: #2f9e44;
+      --ok-bg: #f0fdf4;
+      --ok-ink: #14532d;
+      --warn: #b45309;
+      --warn-bg: #fffbeb;
+      --warn-ink: #92400e;
+      --crit: #b91c1c;
+      --crit-bg: #fef2f2;
+      --crit-ink: #991b1b;
+      --radius: 10px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- Encabezado institucional ---------- */
+    header.top {
+      position: relative;
+      background: var(--brand-black);
+      color: #ffffff;
+      border-bottom: 4px solid var(--brand-red);
+    }
+    header.top::after {
+      content: "";
+      position: absolute;
+      bottom: -4px;
+      left: max(1.5rem, calc((100% - 1240px) / 2 + 1.5rem));
+      width: 96px;
+      height: 4px;
+      background: var(--brand-green);
+    }
+    .top-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 0.85rem; }
+    .brand-mark {
+      width: 40px; height: 40px;
+      border-radius: 9px;
+      background: var(--charcoal);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: grid; place-items: center;
+      flex: none;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+    .brand p {
+      margin: 0.1rem 0 0;
+      font-size: 0.78rem;
+      color: #a1a1aa;
+    }
+    .model-chip {
+      font-size: 0.76rem;
+      color: #e4e4e7;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: var(--charcoal);
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .model-chip b { color: #58c76d; font-weight: 650; }
+
+    main {
+      max-width: 1240px;
+      margin: 1.5rem auto 2.5rem;
+      padding: 0 1.5rem;
+    }
+
+    /* ---------- Paneles ---------- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 700;
+      color: var(--charcoal);
+      display: flex; align-items: center; gap: 0.55rem;
+    }
+    .panel-title::before {
+      content: "";
+      width: 4px; height: 14px;
+      background: var(--brand-red);
+      border-radius: 2px;
+    }
+    .panel-note { font-size: 0.78rem; color: var(--faint); }
+
+    /* ---------- Formulario ---------- */
+    form.grid-form {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(220px, 1.5fr) minmax(170px, 1.1fr) minmax(150px, 0.9fr) auto;
+      gap: 1rem 1.1rem;
+      align-items: start;
+    }
+    .field-action label { visibility: hidden; }
+    @media (max-width: 1100px) {
+      form.grid-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .field-action { grid-column: 1 / -1; }
+      .field-action label { display: none; }
+      .field-action .btn-primary { width: auto; min-width: 220px; }
+    }
+    @media (max-width: 700px) {
+      form.grid-form { grid-template-columns: 1fr; }
+      .field-action .btn-primary { width: 100%; }
+    }
+    label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 650;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    select, input {
+      width: 100%;
+      min-height: 2.5rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.92rem;
+      font-variant-numeric: tabular-nums;
+    }
+    select:focus, input:focus, button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+      border-color: var(--focus);
+    }
+    input.invalid {
+      border-color: var(--crit);
+      background: var(--crit-bg);
+    }
+    .hint { font-size: 0.72rem; color: var(--faint); margin-top: 0.25rem; }
+    button {
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 650;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .btn-primary {
+      width: 100%;
+      min-height: 2.5rem;
+      white-space: nowrap;
+      padding: 0.6rem 1.5rem;
+      background: var(--charcoal);
+      color: #fff;
+      border: 1px solid var(--brand-black);
+      box-shadow: inset 0 -2px 0 var(--brand-red);
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--brand-black); }
+    .btn-primary:disabled {
+      background: #a1a1aa;
+      border-color: #a1a1aa;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .btn-fix {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.82rem;
+      background: #fff;
+      color: var(--crit-ink);
+      border: 1px solid var(--crit);
+    }
+    .btn-fix:hover { background: var(--crit-bg); }
+    .btn-fix.primary { background: var(--crit); color: #fff; }
+    .btn-fix.primary:hover { background: var(--crit-ink); }
+
+    /* ---------- Alertas ---------- */
+    .alert {
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      border: 1px solid;
+      border-left-width: 5px;
+    }
+    .alert-error { background: var(--crit-bg); color: var(--crit-ink); border-color: var(--crit); }
+    .alert-warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--amber-600); }
+    #window-alert {
+      display: none;
+      margin: 1rem 0 0;
+    }
+    #window-alert.show { display: block; }
+    #window-alert .alert-actions {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem;
+    }
+
+    /* ---------- KPIs ---------- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-top: 3px solid var(--charcoal);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.1rem 1.05rem;
+    }
+    .kpi.robust { border-top-color: var(--brand-red); }
+    .kpi .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 650;
+      color: var(--faint);
+    }
+    .kpi .value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin: 0.35rem 0 0.2rem;
+      color: var(--brand-black);
+    }
+    .kpi .value small {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 0.15rem;
+    }
+    .kpi .sub { font-size: 0.8rem; color: var(--muted); }
+
+    /* ---------- Badges ---------- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border: 1px solid;
+      white-space: nowrap;
+    }
+    .badge::before {
+      content: "";
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .badge-ok { background: var(--ok-bg); color: var(--ok-ink); border-color: #bbf7d0; }
+    .badge-warn { background: var(--crit-bg); color: var(--crit-ink); border-color: #fecaca; }
+    .badge-stale { background: var(--warn-bg); color: var(--warn-ink); border-color: #fde68a; }
+
+    /* ---------- Barras de progreso ---------- */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+    .scenario {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem 1.1rem;
+      background: #fafafa;
+    }
+    .scenario h3 {
+      margin: 0 0 0.9rem;
+      font-size: 0.92rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      color: var(--brand-black);
+    }
+    .scenario h3 .tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: var(--charcoal);
+      color: #fff;
+    }
+    .scenario h3 .tag.robust { background: var(--brand-red); }
+    .meter { margin-bottom: 1rem; }
+    .meter:last-child { margin-bottom: 0; }
+    .meter-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .meter-head b { color: var(--ink); font-size: 0.86rem; }
+    .track {
+      position: relative;
+      height: 14px;
+      background: var(--track);
+      border-radius: 7px;
+      overflow: visible;
+    }
+    .fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      border-radius: 7px;
+      background: var(--ok);
+    }
+    .fill.warn { background: var(--amber-600); }
+    .fill.crit { background: var(--crit); }
+    .marker {
+      position: absolute;
+      top: -4px; bottom: -4px;
+      width: 2px;
+      background: var(--brand-black);
+    }
+    .marker::after {
+      content: "ρ";
+      position: absolute;
+      top: -15px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--brand-black);
+    }
+    .meter-foot {
+      display: flex; justify-content: space-between;
+      font-size: 0.72rem; color: var(--faint);
+      margin-top: 0.3rem;
+    }
+    .meter.has-marker .track { margin-top: 0.9rem; }
+    .meter-foot .over { color: var(--crit-ink); font-weight: 650; }
+
+    /* ---------- Tabla ---------- */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 0.65rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: #fafafa;
+      font-weight: 700;
+    }
+    th.col-robust { box-shadow: inset 0 -2px 0 var(--brand-red); }
+    th.col-nominal { box-shadow: inset 0 -2px 0 var(--charcoal); }
+    td.num, th.num { text-align: right; }
+    tbody tr:hover { background: #fafafa; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ---------- Parámetros de ruta ---------- */
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.85rem;
+    }
+    .param {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.8rem;
+      background: #fafafa;
+    }
+    .param .k {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--faint); font-weight: 650;
+    }
+    .param .v { font-size: 1.05rem; font-weight: 700; color: var(--brand-black); margin-top: 0.15rem; }
+
+    footer.foot {
+      max-width: 1240px;
+      margin: 0 auto 2rem;
+      padding: 0 1.5rem;
+      font-size: 0.74rem;
+      color: var(--faint);
+    }
+
+    @media (max-width: 640px) {
+      .top-inner, main, footer.foot { padding-left: 1rem; padding-right: 1rem; }
+      .kpi .value { font-size: 1.55rem; }
+    }
+  </style>
+</head>
+<body>
+
+{# ---------- Macros de indicadores (solo CSS) ---------- #}
+{% macro fleet_meter(plan, params) %}
+  {% set flota = params.flota_disponible if params.flota_disponible else 1 %}
+  {% set ratio = plan.buses_requeridos / flota %}
+  {% set pct = [ratio * 100, 100] | min %}
+  {% set over = plan.buses_requeridos - params.flota_disponible %}
+  <div class="meter">
+    <div class="meter-head">
+      <span>Uso de flota (requeridos vs. disponibles)</span>
+      <b>{{ plan.buses_requeridos }} / {{ params.flota_disponible }} buses</b>
+    </div>
+    <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="{{ '%.0f'|format(pct) }}" aria-label="Uso de flota">
+      <div class="fill {% if ratio > 1 %}crit{% elif ratio > 0.9 %}warn{% endif %}"
+           style="width: {{ '%.1f'|format(pct) }}%"></div>
+    </div>
+    <div class="meter-foot">
+      <span>{{ '%.0f'|format(ratio * 100) }} % de la flota</span>
+      {% if over > 0 %}
+        <span class="over">Déficit: {{ over }} buses</span>
+      {% else %}
+        <span>Reserva: {{ params.flota_disponible - plan.buses_requeridos }} buses</span>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro occ_meter(plan, params) %}
+  {% set occ = plan.ocupacion_estimada %}
+  {% set rho = params.ocupacion_objetivo %}
+  {% set pct = [occ * 100, 100] | min %}
+  <div class="meter has-marker">
+    <div class="meter-head">
+      <span>Ocupación estimada vs. umbral objetivo (ρ)</span>
+      <b>{{ '%.1f'|format(occ * 100) }} % <span style="color:var(--faint);font-weight:500">/ ρ = {{ '%.0f'|format(rho * 100) }} %</span></b>
+    </div>
+    <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="{{ '%.0f'|format(pct) }}" aria-label="Ocupación estimada">
+      <div class="fill {% if occ >= 1 %}crit{% elif occ > rho %}warn{% endif %}"
+           style="width: {{ '%.1f'|format(pct) }}%"></div>
+      <div class="marker" style="left: {{ '%.1f'|format([rho * 100, 100] | min) }}%"></div>
+    </div>
+    <div class="meter-foot">
+      <span>0 %</span>
+      <span>
+        {% if occ > rho %}
+          <span class="over">{{ '%.1f'|format((occ - rho) * 100) }} pp sobre el objetivo</span>
+        {% else %}
+          {{ '%.1f'|format((rho - occ) * 100) }} pp bajo el objetivo
+        {% endif %}
+      </span>
+      <span>100 %</span>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro status_badge(plan) %}
+  {% if plan.saturacion_alerta %}
+    <span class="badge badge-warn">ALERTA SATURACIÓN</span>
+  {% else %}
+    <span class="badge badge-ok">OPERACIÓN NORMAL</span>
+  {% endif %}
+{% endmacro %}
+
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="13" rx="3" stroke="#ffffff" stroke-width="1.6"/>
+            <path d="M3 11h18" stroke="#d4202a" stroke-width="1.6"/>
+            <circle cx="8" cy="19" r="1.6" fill="#ffffff"/>
+            <circle cx="16" cy="19" r="1.6" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div>
+          <h1>SOBUSA · Centro de Control de Demanda y Despacho</h1>
+          <p>Predicción de demanda y optimización de frecuencias · Barranquilla</p>
+        </div>
+      </div>
+      <div class="model-chip"><b>LightGBM Tweedie</b> + Split Conformal (95 %)</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Parámetros de Consulta y Despacho</h2>
+        <span class="panel-note">Ventana de operación comercial: 04:30 – 20:30 · cortes de 15 min</span>
+      </div>
+
+      <form class="grid-form" id="query-form" method="post" action="/ui/optimize" novalidate>
+        <div>
+          <label for="route">Ruta</label>
+          <select id="route" name="route">
+            {% for r in routes %}
+            <option value="{{ r }}" {% if form.route == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="horizon_min">Horizonte (min)</label>
+          <select id="horizon_min" name="horizon_min">
+            {% for h in [30, 60, 120] %}
+            <option value="{{ h }}" {% if form.horizon_min == h %}selected{% endif %}>{{ h }} min</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="target_datetime">Fecha y Hora Objetivo</label>
+          <input type="datetime-local" id="target_datetime" name="target_datetime"
+                 value="{{ form.target_datetime }}" step="900" required
+                 aria-describedby="window-alert" />
+          <div class="hint">Entre 04:30 y 20:30, múltiplos de 15 min</div>
+        </div>
+
+        <div>
+          <label for="tipo_estacionalidad">Estacionalidad</label>
+          <select id="tipo_estacionalidad" name="tipo_estacionalidad">
+            {% for est, etiqueta in [
+              ("DIAS_CORRIENTES", "Días corrientes"),
+              ("FESTIVOS", "Festivos"),
+              ("CARNAVAL", "Carnaval"),
+              ("SEMANA_SANTA", "Semana Santa"),
+              ("PRIMA_JUNIO", "Prima de junio"),
+              ("PRIMA_DICIEMBRE", "Prima de diciembre")
+            ] %}
+            <option value="{{ est }}" {% if form.tipo_estacionalidad == est %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="factor_ocupacion_objetivo">Ocupación Objetivo (ρ)</label>
+          <input type="number" id="factor_ocupacion_objetivo" name="factor_ocupacion_objetivo"
+                 value="{{ form.factor_ocupacion_objetivo }}" min="0.50" max="1.00" step="0.05" required />
+          <div class="hint">Rango 0.50 – 1.00, paso 0.05</div>
+        </div>
+
+        <div class="field-action">
+          <label aria-hidden="true">&nbsp;</label>
+          <button type="submit" class="btn-primary" id="submit-btn">Calcular Plan</button>
+        </div>
+      </form>
+
+      <div id="window-alert" class="alert alert-error" role="alert" aria-live="assertive">
+        <strong>Fuera de la ventana operativa.</strong>
+        <span id="window-alert-msg"></span>
+        <div class="alert-actions" id="window-alert-actions"></div>
+      </div>
+    </section>
+
+    {% if error %}
+    <div class="alert alert-error" role="alert"><strong>Error operativo:</strong> {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+      {% if result.warning %}
+      <div class="alert alert-warn" role="alert"><strong>Advertencia de vigencia:</strong> {{ result.warning }}</div>
+      {% endif %}
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="label">Demanda Esperada ({{ result.horizon_min }} min)</div>
+          <div class="value">{{ "%.1f"|format(result.prediccion.puntual) }}<small>pax</small></div>
+          <div class="sub">IC 95 %: [{{ "%.1f"|format(result.prediccion.ic_95_inferior) }}, {{ "%.1f"|format(result.prediccion.ic_95_superior) }}]</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Headway Óptimo (Nominal)</div>
+          <div class="value">{{ result.plan_nominal.headway_optimo_min }}<small>min</small></div>
+          <div class="sub">Efectivo con flota: {{ result.plan_nominal.headway_efectivo_min }} min · {{ result.plan_nominal.frecuencia_objetivo_buses_h }} buses/h</div>
+        </div>
+
+        <div class="kpi robust">
+          <div class="label">Headway Robusto (P95)</div>
+          <div class="value">{{ result.plan_robusto_p95.headway_optimo_min }}<small>min</small></div>
+          <div class="sub">Efectivo con flota: {{ result.plan_robusto_p95.headway_efectivo_min }} min · {{ result.plan_robusto_p95.frecuencia_objetivo_buses_h }} buses/h</div>
+        </div>
+
+        <div class="kpi">
+          <div class="label">Flota Asignada / Requerida</div>
+          <div class="value">{{ result.plan_nominal.buses_asignados }} / {{ result.plan_nominal.buses_requeridos }}<small>buses</small></div>
+          <div class="sub">
+            {% if result.plan_nominal.saturacion_alerta %}
+              <span class="badge badge-warn">Déficit: {{ result.plan_nominal.deficit_flota }} buses</span>
+            {% else %}
+              <span class="badge badge-ok">Flota suficiente</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Uso de Flota y Ocupación · Nominal vs. Robusto (P95)</h2>
+          <span class="panel-note">La marca ρ indica la ocupación objetivo de la ruta</span>
+        </div>
+        <div class="scenario-grid">
+          <div class="scenario">
+            <h3>
+              <span><span class="tag">Nominal</span>&nbsp; Demanda media</span>
+              {{ status_badge(result.plan_nominal) }}
+            </h3>
+            {{ fleet_meter(result.plan_nominal, result.parametros_ruta) }}
+            {{ occ_meter(result.plan_nominal, result.parametros_ruta) }}
+          </div>
+          <div class="scenario">
+            <h3>
+              <span><span class="tag robust">Robusto</span>&nbsp; Cota superior 95 %</span>
+              {{ status_badge(result.plan_robusto_p95) }}
+            </h3>
+            {{ fleet_meter(result.plan_robusto_p95, result.parametros_ruta) }}
+            {{ occ_meter(result.plan_robusto_p95, result.parametros_ruta) }}
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Comparativo Operativo: Despacho Nominal vs. Escenario Robusto (P95)</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Indicador Operativo</th>
+                <th class="num col-nominal">Plan Nominal (Media)</th>
+                <th class="num col-robust">Plan Robusto (Cota Superior 95 %)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Demanda acumulada en horizonte ({{ result.horizon_min }} min)</td>
+                <td class="num">{{ result.plan_nominal.demanda_horizonte_pax }} pax</td>
+                <td class="num">{{ result.plan_robusto_p95.demanda_horizonte_pax }} pax</td>
+              </tr>
+              <tr>
+                <td>Tasa horaria de abordajes</td>
+                <td class="num">{{ result.plan_nominal.demanda_horaria_pax_h }} pax/h</td>
+                <td class="num">{{ result.plan_robusto_p95.demanda_horaria_pax_h }} pax/h</td>
+              </tr>
+              <tr>
+                <td>Frecuencia objetivo</td>
+                <td class="num">{{ result.plan_nominal.frecuencia_objetivo_buses_h }} buses/h</td>
+                <td class="num">{{ result.plan_robusto_p95.frecuencia_objetivo_buses_h }} buses/h</td>
+              </tr>
+              <tr>
+                <td>Headway óptimo teórico</td>
+                <td class="num">{{ result.plan_nominal.headway_optimo_min }} min</td>
+                <td class="num">{{ result.plan_robusto_p95.headway_optimo_min }} min</td>
+              </tr>
+              <tr>
+                <td>Buses requeridos (ciclo {{ result.parametros_ruta.ciclo_min }} min)</td>
+                <td class="num">{{ result.plan_nominal.buses_requeridos }} buses</td>
+                <td class="num">{{ result.plan_robusto_p95.buses_requeridos }} buses</td>
+              </tr>
+              <tr>
+                <td>Buses asignados</td>
+                <td class="num">{{ result.plan_nominal.buses_asignados }} buses</td>
+                <td class="num">{{ result.plan_robusto_p95.buses_asignados }} buses</td>
+              </tr>
+              <tr>
+                <td>Déficit de flota</td>
+                <td class="num">{{ result.plan_nominal.deficit_flota }} buses</td>
+                <td class="num">{{ result.plan_robusto_p95.deficit_flota }} buses</td>
+              </tr>
+              <tr>
+                <td>Headway efectivo con flota disponible ({{ result.parametros_ruta.flota_disponible }} buses)</td>
+                <td class="num">{{ result.plan_nominal.headway_efectivo_min }} min</td>
+                <td class="num">{{ result.plan_robusto_p95.headway_efectivo_min }} min</td>
+              </tr>
+              <tr>
+                <td>Relación demanda / capacidad ofertada</td>
+                <td class="num">{{ "%.1f"|format(result.plan_nominal.ocupacion_estimada * 100) }} %</td>
+                <td class="num">{{ "%.1f"|format(result.plan_robusto_p95.ocupacion_estimada * 100) }} %</td>
+              </tr>
+              <tr>
+                <td>Estado de saturación</td>
+                <td class="num">{{ status_badge(result.plan_nominal) }}</td>
+                <td class="num">{{ status_badge(result.plan_robusto_p95) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">Parámetros Físicos de Ruta y Gobernanza</h2>
+          {% if result.stale %}
+            <span class="badge badge-stale">MODELO NO VIGENTE (STALE)</span>
+          {% else %}
+            <span class="badge badge-ok">MODELO VIGENTE</span>
+          {% endif %}
+        </div>
+        <div class="param-grid">
+          <div class="param"><div class="k">Capacidad nominal</div><div class="v">{{ result.parametros_ruta.capacidad_nominal }} pax/bus</div></div>
+          <div class="param"><div class="k">Tiempo de ciclo</div><div class="v">{{ result.parametros_ruta.ciclo_min }} min</div></div>
+          <div class="param"><div class="k">Flota disponible</div><div class="v">{{ result.parametros_ruta.flota_disponible }} buses</div></div>
+          <div class="param"><div class="k">Ocupación objetivo (ρ)</div><div class="v">{{ result.parametros_ruta.ocupacion_objetivo }}</div></div>
+          <div class="param"><div class="k">Horizonte</div><div class="v">{{ result.horizon_min }} min</div></div>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <footer class="foot">
+    SOBUSA S.A. · Sociedad de Transportadores Urbanos del Atlántico · Sistema predictivo de demanda y optimización de frecuencias · Operación comercial 04:30 – 20:30.
+  </footer>
+
+  <script>
+    (function () {
+      var OPEN_MIN = 4 * 60 + 30;   /* 04:30 */
+      var CLOSE_MIN = 20 * 60 + 30; /* 20:30 */
+
+      var form = document.getElementById('query-form');
+      var input = document.getElementById('target_datetime');
+      var rho = document.getElementById('factor_ocupacion_objetivo');
+      var submitBtn = document.getElementById('submit-btn');
+      var alertBox = document.getElementById('window-alert');
+      var alertMsg = document.getElementById('window-alert-msg');
+      var alertActions = document.getElementById('window-alert-actions');
+
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function fmt(mins) { return pad(Math.floor(mins / 60)) + ':' + pad(mins % 60); }
+
+      function parse(value) {
+        if (!value || value.indexOf('T') === -1) { return null; }
+        var parts = value.split('T');
+        var t = parts[1].split(':');
+        var h = parseInt(t[0], 10);
+        var m = parseInt(t[1], 10);
+        if (isNaN(h) || isNaN(m)) { return null; }
+        return { date: parts[0], mins: h * 60 + m };
+      }
+
+      function setTime(date, mins) {
+        input.value = date + 'T' + fmt(mins);
+        validate();
+      }
+
+      function makeBtn(text, mins, date, primary) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-fix' + (primary ? ' primary' : '');
+        b.textContent = text;
+        b.addEventListener('click', function () { setTime(date, mins); input.focus(); });
+        return b;
+      }
+
+      function clearAlert() {
+        alertBox.classList.remove('show');
+        alertMsg.textContent = '';
+        while (alertActions.firstChild) { alertActions.removeChild(alertActions.firstChild); }
+      }
+
+      function validate() {
+        var p = parse(input.value);
+        clearAlert();
+        input.classList.remove('invalid');
+        input.setCustomValidity('');
+        if (!p) { updateSubmit(true); return true; } /* vacío: lo gestiona "required" */
+
+        var inWindow = p.mins >= OPEN_MIN && p.mins <= CLOSE_MIN;
+        var onGrid = p.mins % 15 === 0;
+        if (inWindow && onGrid) { updateSubmit(true); return true; }
+
+        input.classList.add('invalid');
+        var nearest;
+        if (!inWindow) {
+          alertMsg.textContent = 'Seleccionaste las ' + fmt(p.mins) +
+            ', pero SOBUSA opera únicamente entre las 04:30 y las 20:30 (cortes de 15 min). ' +
+            'Elige una hora dentro de ese rango.';
+          var nearOpen = p.mins < OPEN_MIN;
+          alertActions.appendChild(makeBtn('Ajustar a 04:30', OPEN_MIN, p.date, nearOpen));
+          alertActions.appendChild(makeBtn('Ajustar a 20:30', CLOSE_MIN, p.date, !nearOpen));
+        } else {
+          nearest = Math.round(p.mins / 15) * 15;
+          nearest = Math.min(Math.max(nearest, OPEN_MIN), CLOSE_MIN);
+          alertMsg.textContent = 'La hora ' + fmt(p.mins) +
+            ' no coincide con un corte de 15 min (:00, :15, :30, :45) de la ventana 04:30 – 20:30.';
+          alertActions.appendChild(makeBtn('Redondear a ' + fmt(nearest), nearest, p.date, true));
+        }
+        alertBox.classList.add('show');
+        input.setCustomValidity('Hora fuera de la ventana operativa 04:30 – 20:30');
+        updateSubmit(false);
+        return false;
+      }
+
+      function validRho() {
+        var v = parseFloat(rho.value);
+        return !isNaN(v) && v >= 0.5 && v <= 1.0;
+      }
+
+      function updateSubmit(timeOk) {
+        submitBtn.disabled = !(timeOk && validRho());
+      }
+
+      input.addEventListener('input', validate);
+      input.addEventListener('change', validate);
+      rho.addEventListener('input', function () { updateSubmit(validate()); });
+
+      form.addEventListener('submit', function (ev) {
+        var ok = validate();
+        if (!ok) {
+          ev.preventDefault();
+          input.focus();
+          return;
+        }
+        if (!validRho()) {
+          ev.preventDefault();
+          rho.focus();
+          return;
+        }
+      });
+
+      validate();
+    })();
+  </script>
+</body>
+</html>

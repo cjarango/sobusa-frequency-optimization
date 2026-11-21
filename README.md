@@ -1,228 +1,248 @@
 # SOBUSA Data Challenge 2026 — Predicción y Optimización de Frecuencias
 
-Prototipo de un sistema inteligente para predecir la demanda de pasajeros y recomendar frecuencias de despacho en las rutas de SOBUSA (Sistema de Transporte Masivo de Barranquilla), desarrollado en el marco del Data Challenge 2026 propuesto por Extreme Technologies en alianza con la Universidad del Norte.
+Prototipo de un sistema inteligente contenerizado para predecir la demanda de pasajeros en intervalos de 15 minutos y recomendar frecuencias de despacho (*headways*) y flota requerida en las rutas de SOBUSA (Barranquilla, Colombia), desarrollado en el marco del Data Challenge 2026 propuesto por Extreme Technologies en alianza con la Universidad del Norte.
 
 ## Contexto
 
-SOBUSA opera un sistema de transporte masivo cuyas decisiones de despacho dependen hoy, en gran medida, de la experiencia operativa y de reglas fijas. La información sobre subidas, bajadas, programaciones, segmentos de ruta y estacionalidades ya existe en PostgreSQL, alimentada por triggers y procesos internos de Extreme Technologies.
+SOBUSA opera un sistema de transporte urbano cuyas decisiones de despacho dependen en gran medida de la experiencia operativa y de reglas fijas. La información sobre abordajes en intervalos de 15 minutos, ventanas de evaluación y parámetros operativos de ruta reside en PostgreSQL.
 
-El reto consiste en transformar esa información en un sistema de decisión anticipada: predecir la demanda por ruta y franja horaria, traducirla en una frecuencia de despacho recomendada (headway, buses por hora, vehículos requeridos) y generar alertas operativas explicables cuando la operación real se desvía de lo esperado.
-
-El sistema no debe limitarse a un modelo entrenado en un notebook. Se requiere un producto mínimo viable con API REST, persistencia trazable en PostgreSQL y ejecución automática, sin modificar las tablas, triggers ni scripts existentes.
+El reto consiste en transformar esa información en un sistema de decisión anticipada: predecir la demanda por ruta y horizonte temporal (30, 60 y 120 minutos) con bandas de incertidumbre conformal, traducirla en una frecuencia de despacho recomendada (*headway*, buses por hora, vehículos requeridos) y generar diagnósticos operativos explicables frente a la flota disponible, sin modificar el esquema operacional existente.
 
 Pregunta que resuelve el sistema:
 
-> Con base en los datos históricos y recientes, ¿cada cuánto despachar buses para optimizar la flota y el recaudo? ¿Cuántos pasajeros y vehículos se esperan y qué situaciones requieren atención inmediata?
+> Con base en los datos históricos y recientes, ¿cada cuánto despachar buses para optimizar la flota y el nivel de servicio? ¿Cuántos pasajeros y vehículos se esperan y qué situaciones requieren atención inmediata?
 
+---
 
 ## Objetivos
 
 ### Objetivo general
 
-Diseñar e implementar un prototipo basado en inteligencia artificial y analítica de datos que consuma las tablas existentes en PostgreSQL, prediga la demanda por ruta y franja horaria, recomiende frecuencias de despacho, detecte desviaciones y genere alertas operativas explicables, usando Python como lenguaje principal.
+Diseñar e implementar un prototipo basado en inteligencia artificial y analítica de datos que consuma las tablas existentes en PostgreSQL, prediga la demanda por ruta y horizonte temporal, recomiende frecuencias de despacho, detecte déficit o saturación de capacidad y exponga los resultados mediante una API REST y un tablero web contenerizado.
 
 ### Objetivos específicos
 
-- Predecir la demanda de pasajeros por ruta y franja horaria para horizontes de 30, 60 y 120 minutos.
-- Calcular headway, buses por hora y vehículos requeridos bajo restricciones operativas de capacidad, flota, headway mínimo y nivel de servicio.
-- Detectar sobreocupación, baja utilización, caídas anómalas de demanda, desviaciones del pronóstico y datos incompletos.
-- Exponer las variables que más influyen en cada predicción mediante importancia global y local.
-- Publicar predicciones, recomendaciones y alertas mediante una API REST versionada.
-- Registrar cada predicción, recomendación y alerta con versión de modelo, corte de datos y métricas asociadas.
+- Predecir la demanda de pasajeros por ruta y franja de 15 minutos para horizontes de 30, 60 y 120 minutos mediante modelos LightGBM Tweedie con predicción conformal.
+- Calcular *headway*, buses por hora y vehículos requeridos bajo restricciones operativas de capacidad nominal, ocupación objetivo, duración de ciclo y flota disponible.
+- Diagnosticar automáticamente estados de operación normal, alerta de capacidad o déficit de flota según la demanda esperada y su banda superior de seguridad.
+- Publicar predicciones, recomendaciones y diagnósticos operativos mediante una API REST documentada (OpenAPI/Swagger) y una interfaz web interactiva en Jinja2.
+- Garantizar la reproducibilidad completa del entorno mediante Docker Compose con autoinicialización de PostgreSQL.
+
+---
 
 ## Alcance
 
 | Módulo | Responsabilidad |
 |---|---|
-| Acceso y calidad | Leer tablas existentes; validar completitud, validez, unicidad y consistencia. |
-| Predicción de demanda | Estimar subidas por ruta y franja con intervalo de confianza. |
-| Optimización | Traducir la demanda en headway, buses por hora y vehículos requeridos. |
-| Anomalías y alertas | Evaluar reglas operativas, priorizar y registrar eventos. |
-| API y tablero | Exponer indicadores, predicciones, recomendaciones y alertas. |
+| Acceso a datos | Consultar tablas operativas e históricas en PostgreSQL mediante SQLAlchemy en modo lectura. |
+| Predicción de demanda | Estimar abordajes por ruta y horizonte con bandas superiores de seguridad conformales. |
+| Optimización de despacho | Traducir la demanda pronosticada en *headway*, buses por hora y flota requerida. |
+| Diagnóstico operativo | Evaluar capacidad efectiva frente a flota disponible y clasificar alertas operativas. |
+| API y tablero web | Exponer endpoints REST y tablero interactivo para simulación por corte temporal. |
 
-Fuera del alcance: control directo de despachos, modificación de triggers y tablas existentes, despliegue productivo definitivo.
+Fuera del alcance: control directo de despachos en tiempo real, modificación de triggers o tablas operativas existentes, despliegue productivo definitivo.
 
+---
 
 ## Enfoque de modelado
 
-El problema se formula como un pronóstico supervisado de demanda agregada por ruta y ventana temporal.
+El problema se formula como un pronóstico supervisado de demanda agregada por ruta y ventana temporal de 15 minutos.
 
-- Unidad de observación: (id_ruta, fecha, franja_horaria).
-- Variable objetivo principal: subidas_total, correspondiente a la suma de subidas en la franja (demanda de abordajes).
-- Variables objetivo secundarias: bajadas_total y subidas_por_viaje.
-- Variables predictoras: hora, minuto, franja, día de la semana, mes, estacionalidad, indicadores cíclicos, lags temporales y variables de oferta (n_viajes).
-- Modelo candidato: Gradient Boosting con LightGBM, exportable a ONNX.
-- Línea base: promedio por día-hora y promedio de la última semana.
-- Validación: división cronológica (entrenamiento, validación y prueba) con métricas MAE, RMSE y WAPE, desagregadas por hora pico y hora valle.
+- **Unidad de observación:** `(ruta, ventana de 15 minutos)`.
+- **Variable objetivo principal:** `pasajeros` (demanda de abordajes en la ventana de 15 minutos, no negativa y con sobredispersión).
+- **Horizontes de predicción:** `30 min` ($h = 2$), `60 min` ($h = 4$) y `120 min` ($h = 8$).
+- **Variables predictoras:** rezagos autorregresivos temporales, estadísticas móviles, codificación cíclica de hora y día de la semana, indicadores de franja pico/valle y atributos de ruta.
+- **Modelo seleccionado:** Gradient Boosting con función de pérdida **Tweedie** (`LightGBMTweedieWrapper`), calibrado mediante validación cruzada temporal con ventana deslizante (*sliding-window*) y optimización bayesiana de hiperparámetros con Optuna.
+- **Cuantificación de incertidumbre:** intervalos de predicción conformales calibrados sobre conjunto independiente (`calibration`), reportando la estimación puntual (`y_pred`) y el límite superior de seguridad (`y_upper`).
 
-### Optimización de frecuencia
+### Optimización de frecuencia y flota
 
-La recomendación se construye sobre la predicción de demanda como un problema de programación lineal entera mixta resuelto con PuLP, con la siguiente función objetivo de referencia:
+A partir de la demanda horaria proyectada $D_{\text{horaria}}$ y los parámetros físicos almacenados por ruta (`capacidad_nominal`, `ciclo_min`, `flota_disponible`, `ocupacion_objetivo`), la recomendación de despacho se formula bajo las restricciones operativas del corredor:
 
-$$
-\min \; \alpha \cdot \text{costo\_operativo} + \beta \cdot \text{tiempo\_espera} + \gamma \cdot \text{penalización\_sobreocupación} + \delta \cdot \text{desviación\_frecuencia}
-$$
+$$\begin{aligned} C_{\text{ef}} &= \text{capacidad\_nominal} \times \text{ocupacion\_objetivo} \\ B_h &= \left\lceil \frac{D_{\text{horaria}}}{C_{\text{ef}}} \right\rceil \\ H &= \frac{60}{B_h} \\ F_{\text{req}} &= \left\lceil \frac{\text{ciclo\_min}}{H} \right\rceil \end{aligned}$$
 
 Sujeto a:
 
-- capacidad disponible
-- flota disponible
-- headway mínimo y máximo
-- duración de ciclo
-- nivel de servicio
+- capacidad efectiva disponible por vehículo ($C_{\text{ef}}$)
+- flota disponible en patio/corredor ($F_{\text{req}} \le \text{flota\_disponible}$)
+- límites operativos de *headway* mínimo y máximo
+- duración total de ciclo de ruta (`ciclo_min`)
+- nivel de servicio y ocupación objetivo
 
-Valores iniciales de referencia:
+Valores operativos de referencia:
 
-| Parámetro | Valor inicial |
+| Parámetro | Valor de referencia |
 |---|---|
-| Ocupación objetivo | 65 % – 85 % |
-| Ocupación crítica | mayor o igual a 90 % |
-| Baja utilización | menor a 30 % |
-| Espera máxima | 5 minutos |
-| Error de pronóstico tolerable | mayor o igual a 15 % |
+| Resolución temporal | 15 minutos |
+| Horizontes operativos | 30, 60 y 120 minutos |
+| Ocupación objetivo | Parametrizada por ruta en PostgreSQL |
+| Diagnóstico `OPTIMO` | $F_{\text{req}} \le \text{flota\_disponible}$ bajo demanda esperada y banda superior |
+| Diagnóstico `ALERTA_CAPACIDAD` | Demanda puntual cubierta, banda superior exige flota adicional |
+| Diagnóstico `DEFICIT_FLOTA` | $F_{\text{req}} > \text{flota\_disponible}$ bajo demanda esperada |
 
 ---
 
 ## Estructura del proyecto
 
-```bash
+```text
 .
-├── .github/
-│   └── workflows/
-│       └── ci.yaml
-├── data/
-│   ├── raw/
-│   └── processed/
+├── db/
+│   └── init.sql
+├── models/
 ├── notebooks/
-│   ├── 01_exploratory_data_analysis.ipynb
-│   ├── 02_baseline_and_features.ipynb
-│   └── 03_modeling_lightgbm.ipynb
 ├── src/
-│   ├── data/
-│   ├── features/
+│   ├── api/
+│   │   └── main.py
+│   ├── db/
+│   │   └── connection.py
 │   ├── models/
-│   ├── optimization/
-│   ├── alerts/
-│   └── utils/
-├── tests/
-├── api/
-│   └── v1/
-├── alembic/
+│   │   ├── base.py
+│   │   ├── lgbm_tweedie_wrapper.py
+│   │   └── predictor_service.py
+│   └── optimization/
+│       └── dispatch.py
+├── templates/
+│   └── dashboard.html
+├── Dockerfile
+├── docker-compose.yml
 ├── environment.yml
 ├── requirements.txt
-├── pyproject.toml
 ├── LICENSE
 └── README.md
 ```
 
+---
 
-## Instalación y configuración
+## Instalación y puesta en marcha
 
-**1. Clonar el repositorio:**
+### Opción A: Despliegue contenerizado con Docker Compose (Recomendada)
+
+**Requisitos previos:**
+- Docker Desktop con Docker Compose v2 activo.
+- Puertos locales `8000` (API y tablero web) y `5432` (PostgreSQL) disponibles.
+
+**1. Construir y levantar los servicios:**
 
 ```bash
-git clone https://github.com/cjarango/sobusa-frequency-optimization.git
-cd sobusa-data-challenge-2026
+docker compose up --build -d
 ```
 
-**2. Recrear el entorno de Conda:**
+En el primer arranque, el contenedor `sobusa-db` inicializa automáticamente la base de datos y carga los registros desde `db/init.sql` en aproximadamente 10–15 segundos.
+
+**2. Verificar estado de los contenedores:**
+
+```bash
+docker compose ps
+```
+
+**3. Acceder a la aplicación:**
+- **Tablero Web Interactivo:** http://localhost:8000/
+- **Documentación API (Swagger UI):** http://localhost:8000/docs
+- **Healthcheck del Servicio:** http://localhost:8000/health
+
+**4. Detener los servicios:**
+
+```bash
+docker compose down
+```
+
+### Opción B: Ejecución local con Conda
+
+**1. Recrear y activar el entorno:**
 
 ```bash
 conda env create -f environment.yml
-```
-
-**3. Activar el entorno:**
-
-```bash
 conda activate sobusa_data_challenge_2026
 ```
 
-## API REST
+**2. Iniciar el servidor Uvicorn (requiere instancia local de PostgreSQL activa):**
 
-Endpoints mínimos:
+```bash
+uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+---
+
+## API REST y rutas web
+
+Endpoints implementados en FastAPI:
 
 | Método | Ruta | Finalidad |
 |---|---|---|
-| POST | /api/v1/frequency/executions | Ejecutar lectura incremental, predicción y optimización. |
-| GET | /api/v1/frequency/executions/{id} | Consultar corte, estado, métricas y errores. |
-| POST | /api/v1/predictions/run | Solicitar inferencia para ruta y horizonte. |
-| GET | /api/v1/predictions | Consultar pronósticos por filtros. |
-| POST | /api/v1/recommendations/calculate | Calcular frecuencia y flota. |
-| GET | /api/v1/recommendations | Consultar recomendaciones. |
-| GET | /api/v1/alerts | Listar alertas por estado, nivel, ruta y fecha. |
-| PATCH | /api/v1/alerts/{id}/status | Reconocer, cerrar o descartar una alerta. |
-| GET | /api/v1/models | Consultar registro de modelos. |
-| POST | /api/v1/models/{id}/activate | Activar versión aprobada con auditoría. |
+| `GET` | `/` | Renderiza el tablero web operativo con rutas y cortes disponibles. |
+| `POST` | `/ui/forecast` | Ejecuta predicción y optimización desde el formulario web y muestra resultados. |
+| `GET` | `/health` | Verifica estado de la API, conexión a PostgreSQL y cantidad de modelos cargados. |
+| `GET` | `/api/v1/routes` | Lista las rutas configuradas y sus parámetros operativos de flota y ciclo. |
+| `POST` | `/api/v1/predict` | Ejecuta inferencia puntual, banda superior conformal y recomendación de *headway* y flota. |
 
-Ejemplo de respuesta de predicción:
+Ejemplo de respuesta de `POST /api/v1/predict`:
 
-```bash
+```json
 {
-  "predictionId": "8fd7...",
-  "routeId": "RUTA-16",
-  "generatedAt": "2026-07-22T16:00:00-05:00",
-  "horizonMinutes": 60,
-  "predictedPassengers": 185,
-  "confidenceInterval": { "lower": 164, "upper": 207 },
-  "modelVersion": "demand-gb-1.0.0",
-  "recommendation": {
-    "headwayMinutes": 10,
-    "busesPerHour": 6,
-    "vehiclesRequired": 8
+  "ruta": "RUTA K54",
+  "horizonte_min": 60,
+  "cutoff_index": 120,
+  "timestamp_corte": "2026-07-22T16:00:00",
+  "prediccion": {
+    "demanda_esperada": 185.4,
+    "banda_superior_conformal": 207.1
   },
-  "explanation": ["hora_pico", "demanda_ultimos_7_dias", "headway_real"]
+  "recomendacion_despacho": {
+    "headway_min": 10.0,
+    "buses_por_hora": 6,
+    "flota_requerida": 8,
+    "flota_disponible": 10,
+    "estado_operativo": "OPTIMO"
+  }
 }
 ```
 
+---
+
 ## Modelo de datos
 
-Las tablas nuevas se crean en un esquema aislado denominado ai_frecuencias, con el fin de no interferir con las tablas operativas existentes:
+La base de datos `sobusa_db` en PostgreSQL 16 se autoinicializa mediante `db/init.sql` con las siguientes tablas:
 
-- model_registry: registro versionado de modelos.
-- prediction: pronósticos con intervalo de confianza y metadatos.
-- recommendation: headway, buses por hora y vehículos requeridos.
-- alert: alertas con severidad, causa, evidencia y estado.
-- alert_history: bitácora de cambios de estado.
-- execution_log: registro de cada ejecución del pipeline.
+- `rutas`: parámetros operativos por corredor (`capacidad_nominal`, `ciclo_min`, `flota_disponible`, `ocupacion_objetivo`).
+- `historico`: registros históricos de abordajes en intervalos de 15 minutos para construcción de contexto temporal.
+- `test_set`: ventanas temporales de evaluación utilizadas para simular cortes operativos desde la API y el tablero.
+- `calibration`: cuantiles residuales calibrados por ruta y horizonte para la construcción de intervalos conformales.
 
 Reglas de no interferencia:
 
-- Usuario de solo lectura sobre tablas operativas.
-- Usuario separado con escritura únicamente en ai_frecuencias.
-- Transacciones de consulta en modo READ ONLY.
-- Sin operaciones DDL sobre el esquema operacional.
-- Sin modificación de triggers ni scripts existentes.
+- Conexiones de consulta ejecutadas sin alterar la estructura de las tablas base.
+- Separación entre el motor de inferencia (`sobusa-api`) y la persistencia en base de datos (`sobusa-db`).
+- Configuración mediante variables de entorno (`DATABASE_URL`) compatible con despliegue local y contenerizado.
 
+---
 
 ## Stack tecnológico
 
 | Componente | Tecnología |
 |---|---|
 | Lenguaje | Python 3.11 |
-| Gestión de entorno | Conda (canal conda-forge) |
-| Análisis de datos | pandas, polars, DuckDB, PyArrow, SciPy |
-| Machine Learning | scikit-learn, LightGBM, XGBoost, SHAP, Optuna |
-| Optimización | PuLP |
-| Deep Learning | PyTorch (CPU) |
-| Exportación de modelos | ONNX, ONNX Runtime, skl2onnx |
-| API | FastAPI, Uvicorn, Pydantic |
-| Base de datos | PostgreSQL 14 con PostGIS |
-| ORM y migraciones | SQLAlchemy, Alembic |
-| Pruebas | pytest, pytest-cov |
-| Calidad de código | Ruff, Black, SonarQube |
-| Observabilidad | structlog, Prometheus, OpenTelemetry |
+| Gestión de entorno | Conda (`conda-forge`) y Docker |
+| Análisis y procesamiento | pandas, NumPy, PyArrow, Joblib |
+| Machine Learning y Tuning | LightGBM (objetivo Tweedie), scikit-learn, Optuna |
+| API y Frontend Web | FastAPI, Uvicorn, Pydantic, Jinja2 |
+| Base de Datos y ORM | PostgreSQL 16 (Alpine), SQLAlchemy 2, Psycopg 3 |
+| Contenerización | Docker, Docker Compose |
+
+---
 
 ## Plan de trabajo
 
 | Fase | Actividades | Resultado |
 |---|---|---|
-| 1. Descubrimiento | Entendimiento operativo, diccionario y perfilamiento. | Problema y datos validados. |
-| 2. Línea base | Modelo simple, reglas iniciales y API mínima. | Referencia medible. |
-| 3. Modelado | Features, modelos, validación temporal y registro. | Modelo candidato. |
-| 4. Producto | Persistencia, inferencia, optimización, alertas y tablero. | MVP integrado. |
-| 5. Integración | Lectura incremental, pruebas SQL y validación de triggers. | Acceso estable y no invasivo. |
-| 6. Endurecimiento | Pruebas, observabilidad y contenedores. | Versión demostrable. |
-| 7. Cierre | Prueba reservada, documentación y presentación. | Entrega final. |
+| 1. Descubrimiento | Entendimiento operativo, perfilamiento de ventanas de 15 min y validación de reglas. | Datos y restricciones operativas validadas. |
+| 2. Línea base | Construcción de features temporales, rezagos y benchmarks de referencia. | Línea base cronológica establecida. |
+| 3. Modelado | Entrenamiento LightGBM Tweedie, validación *sliding-window* y tuning con Optuna. | Modelos serializados por ruta y horizonte. |
+| 4. Calibración | Calibración conformal sobre conjunto independiente para bandas de seguridad. | Intervalos conformales integrados. |
+| 5. Optimización | Modelado de capacidad efectiva, *headway*, buses por hora y diagnóstico de flota. | Motor de recomendación de despacho. |
+| 6. Producto | Desarrollo de API REST en FastAPI y tablero web operativo en Jinja2. | MVP funcional integrado a PostgreSQL. |
+| 7. Contenerización | Empaquetado con Docker Compose, volcado `db/init.sql` y documentación. | Entrega reproducible lista para evaluación. |
+
+---
 
 ## Equipo
 
@@ -232,16 +252,15 @@ Reglas de no interferencia:
 | Miguel Ángel Pérez Vargas | Científico de Datos |
 | Juan Camilo Mendoza Arango | Científico de Datos |
 
-Proyecto desarrollado en el marco del Data Challenge 2026 — Universidad del Norte.
-
+Proyecto desarrollado en el marco del **Data Challenge 2026** — Universidad del Norte & Extreme Technologies.
 
 ## Referencias
 
-- Especificación técnica del Reto de Frecuencias, Data Challenge 2026, Extreme Technologies.
+- Especificación técnica del Reto de Frecuencias, Data Challenge 2026, Extreme Technologies & Universidad del Norte.
 
 ## Licencia
 
-Distribuido bajo la Licencia MIT. Consultar el archivo LICENSE para más detalles.
+Distribuido bajo la Licencia MIT. Consultar el archivo `LICENSE` para más detalles.
 
 ## Contacto
 

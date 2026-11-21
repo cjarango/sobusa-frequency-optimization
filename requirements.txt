@@ -1,0 +1,13 @@
+﻿fastapi==0.142.2
+uvicorn==0.54.0
+jinja2==3.1.6
+python-multipart==0.0.32
+pyarrow==25.0.0
+pydantic==2.13.5
+sqlalchemy==2.1.9
+psycopg[binary]==3.3.9
+numpy==2.4.6
+pandas==3.1.1
+scikit-learn==1.9.1
+lightgbm==4.6.0
+joblib==1.6.0

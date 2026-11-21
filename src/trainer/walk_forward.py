@@ -14,13 +14,20 @@ expanding window. The validation block of each fold is fixed regardless
 of ``window``, so trials remain comparable on the same hold-out slices.
 """
 
+from __future__ import annotations
+
 import functools
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import optuna
+
+if TYPE_CHECKING:
+    import optuna
+    
 import pandas as pd
+
 from eval.scorer import DemandScorer
 from models.base import BaseDemandModel
 from utils.logger import setup_logger
